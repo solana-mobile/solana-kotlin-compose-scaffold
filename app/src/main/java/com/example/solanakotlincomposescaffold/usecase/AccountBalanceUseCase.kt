@@ -13,9 +13,11 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import java.util.UUID
 
+import com.funkatronics.publickey.SolanaPublicKey as PublicKey
+
 object AccountBalanceUseCase {
     private val TAG = AccountBalanceUseCase::class.simpleName
-    suspend operator fun invoke(rpcUri: Uri, address: ByteArray): Long =
+    suspend operator fun invoke(rpcUri: Uri, address: PublicKey): Long =
         withContext(Dispatchers.IO) {
             val rpc = Rpc20Driver(rpcUri.toString(), KtorHttpDriver())
             val requestId = UUID.randomUUID().toString()
@@ -23,18 +25,18 @@ object AccountBalanceUseCase {
             val response = rpc.makeRequest(request, BalanceResponse.serializer())
 
             response.error?.let { error ->
-                throw InvalidAccountException("Could not fetch balance for account [${Base58.encodeToString(address)}]: ${error.code}, ${error.message}")
+                throw InvalidAccountException("Could not fetch balance for account [${address.base58()}]: ${error.code}, ${error.message}")
             }
 
-            Log.d(TAG, "getBalance pubKey=${Base58.encodeToString(address)}, balance=${response.result}")
+            Log.d(TAG, "getBalance pubKey=${address.base58()}, balance=${response.result}")
             return@withContext response.result!!.value
         }
 
-    private fun createBalanceRequest(address: ByteArray, requestId: String = "1") =
+    private fun createBalanceRequest(address: PublicKey, requestId: String = "1") =
         JsonRpc20Request(
             method = "getBalance",
             params = buildJsonArray {
-                add(Base58.encodeToString(address))
+                add(address.base58())
             },
             requestId
         )

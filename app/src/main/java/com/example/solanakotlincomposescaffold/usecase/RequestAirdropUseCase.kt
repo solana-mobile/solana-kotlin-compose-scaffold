@@ -13,9 +13,11 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import java.util.UUID
 
-class RequestAirdropUseCase {
+import com.funkatronics.publickey.SolanaPublicKey as PublicKey
+
+object RequestAirdropUseCase {
     private val TAG = RequestAirdropUseCase::class.simpleName
-    suspend operator fun invoke(rpcUri: Uri, address: ByteArray, lamports: Long) {
+    suspend operator fun invoke(rpcUri: Uri, address: PublicKey, lamports: Long): String =
         withContext(Dispatchers.IO) {
             val rpc = Rpc20Driver(rpcUri.toString(), KtorHttpDriver())
             val requestId = UUID.randomUUID().toString()
@@ -26,15 +28,16 @@ class RequestAirdropUseCase {
                 throw AirdropFailedException("Airdrop failed: ${error.code}, ${error.message}")
             }
 
-            Log.d(TAG, "requestAirdrop pubKey=${Base58.encodeToString(address)}, signature(base58)=${response.result}")
-        }
-    }
+            Log.d(TAG, "requestAirdrop pubKey=${address.base58()}, signature(base58)=${response.result}")
 
-    private fun createAirdropRequest(address: ByteArray, lamports: Long, requestId: String = "1") =
+            response.result ?: throw AirdropFailedException("Airdrop failed: Unknown Error")
+        }
+
+    private fun createAirdropRequest(address: PublicKey, lamports: Long, requestId: String = "1") =
         JsonRpc20Request(
             method = "requestAirdrop",
             params = buildJsonArray {
-                add(Base58.encodeToString(address))
+                add(address.base58())
                 add(lamports)
             },
             requestId

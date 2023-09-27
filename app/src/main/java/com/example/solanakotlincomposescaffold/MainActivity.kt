@@ -20,18 +20,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.solanakotlincomposescaffold.ui.theme.SolanaKotlinComposeScaffoldTheme
+import com.example.solanakotlincomposescaffold.viewmodel.MainViewModel
+import com.funkatronics.publickey.SolanaPublicKey
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sender = ActivityResultSender(this)
+
         setContent {
             SolanaKotlinComposeScaffoldTheme {
                 // A surface container using the 'background' color from the theme
@@ -49,7 +59,7 @@ class MainActivity : ComponentActivity() {
                                 .padding(all = 24.dp)
                                 .align(Alignment.CenterHorizontally)
                         )
-                        MainScreen()
+                        MainScreen(sender)
                     }
                 }
             }
@@ -59,7 +69,12 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    intentSender: ActivityResultSender? = null,
+    mainViewModel: MainViewModel = hiltViewModel()
+) {
+    val viewState by mainViewModel.viewState.collectAsState()
+
     Column(
         modifier = Modifier
             .padding(16.dp),
@@ -96,24 +111,38 @@ fun MainScreen() {
 
         Spacer(modifier = Modifier.weight(1f))  // This will push the remaining content to the center
 
-        AccountInfo(walletName = "Phantom-wallet", address = "abcdefg123", balance = 102423)
-        Row() {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 4.dp)
-                    .fillMaxWidth()
+        if (viewState.canTransact)
+            AccountInfo(
+                walletName = viewState.userLabel,
+                address = viewState.userAddress,
+                balance = viewState.solBalance
+            )
 
-            ) {
-                Text("Request Airdrop")
-            }
-            Button(onClick = {},
+        Row() {
+            if (viewState.canTransact)
+                Button(
+                    onClick = {
+                        mainViewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp)
+                        .fillMaxWidth()
+
+                ) {
+                    Text("Request Airdrop")
+                }
+            Button(onClick = {
+                if (intentSender != null && !viewState.canTransact)
+                    mainViewModel.connect(intentSender)
+                else
+                    mainViewModel.disconnect()
+            },
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 4.dp)
                         .fillMaxWidth()) {
-                Text("Disconnect")
+                Text(if (viewState.canTransact) "Disconnect" else "Connect")
             } // TODO: Flip to 'Connect' when disconnected/no authToken
         }
     }

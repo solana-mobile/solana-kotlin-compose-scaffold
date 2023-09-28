@@ -1,7 +1,6 @@
 package com.example.solanakotlincomposescaffold
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
@@ -15,11 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -71,9 +70,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(
     intentSender: ActivityResultSender? = null,
-    mainViewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel()
 ) {
-    val viewState by mainViewModel.viewState.collectAsState()
+    val viewState by viewModel.viewState.collectAsState()
+
+    LaunchedEffect(
+        key1 = Unit,
+        block = {
+            viewModel.loadConnection()
+        }
+    )
 
     Column(
         modifier = Modifier
@@ -122,7 +128,7 @@ fun MainScreen(
             if (viewState.canTransact)
                 Button(
                     onClick = {
-                        mainViewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
+                        viewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -132,18 +138,20 @@ fun MainScreen(
                 ) {
                     Text("Request Airdrop")
                 }
-            Button(onClick = {
-                if (intentSender != null && !viewState.canTransact)
-                    mainViewModel.connect(intentSender)
-                else
-                    mainViewModel.disconnect()
-            },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                        .fillMaxWidth()) {
+            Button(
+                onClick = {
+                    if (intentSender != null && !viewState.canTransact)
+                        viewModel.connect(intentSender)
+                    else
+                        viewModel.disconnect()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+                    .fillMaxWidth()
+            ) {
                 Text(if (viewState.canTransact) "Disconnect" else "Connect")
-            } // TODO: Flip to 'Connect' when disconnected/no authToken
+            }
         }
     }
 }

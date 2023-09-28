@@ -3,7 +3,6 @@ package com.example.solanakotlincomposescaffold.usecase
 import android.net.Uri
 import android.util.Log
 import com.example.solanakotlincomposescaffold.networking.KtorHttpDriver
-import com.funkatronics.encoders.Base58
 import com.funkatronics.networking.Rpc20Driver
 import com.funkatronics.rpccore.JsonRpc20Request
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +16,7 @@ import com.funkatronics.publickey.SolanaPublicKey as PublicKey
 
 object RequestAirdropUseCase {
     private val TAG = RequestAirdropUseCase::class.simpleName
+
     suspend operator fun invoke(rpcUri: Uri, address: PublicKey, lamports: Long): String =
         withContext(Dispatchers.IO) {
             val rpc = Rpc20Driver(rpcUri.toString(), KtorHttpDriver())
@@ -42,5 +42,6 @@ object RequestAirdropUseCase {
             },
             requestId
         )
+
     class AirdropFailedException(message: String? = null, cause: Throwable? = null) : RuntimeException(message, cause)
 }

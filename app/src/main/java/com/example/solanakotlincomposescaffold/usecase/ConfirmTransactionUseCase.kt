@@ -17,7 +17,6 @@ import kotlinx.serialization.json.put
 import java.util.UUID
 
 object ConfirmTransactionUseCase {
-
     private val TAG = ConfirmTransactionUseCase::class.simpleName
 
     suspend operator fun invoke(rpcUri: Uri, signature: String): Boolean =
@@ -32,7 +31,7 @@ object ConfirmTransactionUseCase {
 
             while (!confirmed) {
 
-                val response = rpc.makeRequest(request, SolanaResponse.serializer())
+                val response = rpc.makeRequest(request, SignatureStatusResponse.serializer())
 
                 response.error?.let { error ->
                     throw InvalidTransactionSignature("Signature Status Invalid: ${error.code}, ${error.message}")
@@ -71,7 +70,7 @@ object ConfirmTransactionUseCase {
         )
 
     @Serializable
-    class SolanaResponse(val value: List<SignatureStatus?>)
+    class SignatureStatusResponse(val value: List<SignatureStatus?>)
 
     @Serializable
     data class SignatureStatus(

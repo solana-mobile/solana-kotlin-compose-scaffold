@@ -45,6 +45,27 @@ class MainViewModel @Inject constructor(
     val viewState: StateFlow<MainViewState>
         get() = _state
 
+    fun loadConnection() {
+        val persistedConn = persistenceUseCase.getWalletConnection()
+
+        if (persistedConn is Connected) {
+            _state.value.copy(
+                isLoading = true,
+                canTransact = true,
+                userAddress = persistedConn.publicKey.base58(),
+                userLabel = persistedConn.accountLabel,
+            ).updateViewState()
+
+            getBalance(persistedConn.publicKey)
+
+            _state.value.copy(
+                isLoading = false
+            ).updateViewState()
+
+            walletAdapter.authToken = persistedConn.authToken
+        }
+    }
+
     fun connect(sender: ActivityResultSender) {
         viewModelScope.launch {
             when (val result = walletAdapter.connect(sender)) {

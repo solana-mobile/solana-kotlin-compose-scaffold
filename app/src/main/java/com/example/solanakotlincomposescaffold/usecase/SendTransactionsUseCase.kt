@@ -14,6 +14,7 @@ import kotlinx.serialization.json.buildJsonArray
 
 object SendTransactionsUseCase {
     private val TAG = SendTransactionsUseCase::class.simpleName
+
     suspend operator fun invoke(rpcUri: Uri, transactions: List<ByteArray>) {
         withContext(Dispatchers.IO) {
             val signatures = MutableList<String?>(transactions.size) { null }

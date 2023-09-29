@@ -1,7 +1,6 @@
 package com.example.solanakotlincomposescaffold
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
@@ -15,23 +14,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.solanakotlincomposescaffold.ui.theme.SolanaKotlinComposeScaffoldTheme
+import com.example.solanakotlincomposescaffold.viewmodel.MainViewModel
+import com.funkatronics.publickey.SolanaPublicKey
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sender = ActivityResultSender(this)
+
         setContent {
             SolanaKotlinComposeScaffoldTheme {
                 // A surface container using the 'background' color from the theme
@@ -49,7 +58,7 @@ class MainActivity : ComponentActivity() {
                                 .padding(all = 24.dp)
                                 .align(Alignment.CenterHorizontally)
                         )
-                        MainScreen()
+                        MainScreen(sender)
                     }
                 }
             }
@@ -59,7 +68,19 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    intentSender: ActivityResultSender? = null,
+    viewModel: MainViewModel = hiltViewModel()
+) {
+    val viewState by viewModel.viewState.collectAsState()
+
+    LaunchedEffect(
+        key1 = Unit,
+        block = {
+            viewModel.loadConnection()
+        }
+    )
+
     Column(
         modifier = Modifier
             .padding(16.dp),
@@ -96,25 +117,41 @@ fun MainScreen() {
 
         Spacer(modifier = Modifier.weight(1f))  // This will push the remaining content to the center
 
-        AccountInfo(walletName = "Phantom-wallet", address = "abcdefg123", balance = 102423)
-        Row() {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 4.dp)
-                    .fillMaxWidth()
+        if (viewState.canTransact)
+            AccountInfo(
+                walletName = viewState.userLabel,
+                address = viewState.userAddress,
+                balance = viewState.solBalance
+            )
 
-            ) {
-                Text("Request Airdrop")
-            }
-            Button(onClick = {},
+        Row() {
+            if (viewState.canTransact)
+                Button(
+                    onClick = {
+                        viewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
+                    },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 4.dp)
-                        .fillMaxWidth()) {
-                Text("Disconnect")
-            } // TODO: Flip to 'Connect' when disconnected/no authToken
+                        .padding(end = 4.dp)
+                        .fillMaxWidth()
+
+                ) {
+                    Text("Request Airdrop")
+                }
+            Button(
+                onClick = {
+                    if (intentSender != null && !viewState.canTransact)
+                        viewModel.connect(intentSender)
+                    else
+                        viewModel.disconnect()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(if (viewState.canTransact) "Disconnect" else "Connect")
+            }
         }
     }
 }

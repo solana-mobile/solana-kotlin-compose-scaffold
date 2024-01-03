@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,9 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.solanakotlincomposescaffold.ui.theme.SolanaKotlinComposeScaffoldTheme
 import com.example.solanakotlincomposescaffold.viewmodel.MainViewModel
-import com.funkatronics.publickey.SolanaPublicKey
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -49,15 +56,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column() {
-                        // Header
-                        Text(
-                            text = "Solana Compose dApp Scaffold",
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .padding(all = 24.dp)
-                                .align(Alignment.CenterHorizontally)
-                        )
                         MainScreen(sender)
                     }
                 }
@@ -66,6 +64,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun MainScreen(
@@ -73,88 +72,87 @@ fun MainScreen(
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val viewState by viewModel.viewState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(
-        key1 = Unit,
-        block = {
+    Scaffold(
+        topBar = {
+            Text(
+                text = "Solana Compose dApp Scaffold",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(all = 24.dp)
+            )
+         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        contentWindowInsets = WindowInsets(12, 12, 12, 12),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+
+        LaunchedEffect(Unit) {
             viewModel.loadConnection()
         }
-    )
 
-    Column(
-        modifier = Modifier
-            .padding(16.dp),
-    ) {
-        Section(
-            sectionTitle = "Messages:",
-        ) {
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Sign a message")
+        LaunchedEffect(viewState.snackbarMessage) {
+            viewState.snackbarMessage?.let { message ->
+                snackbarHostState.showSnackbar(message)
             }
         }
 
-        Section(
-            sectionTitle = "Transactions:",
+
+        Column(
+            modifier = Modifier
+                .padding(padding)
         ) {
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
+
+            Section(
+                sectionTitle = "Messages:",
             ) {
-                Text(text = "Sign a Transaction")
-            }
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Send a Transaction")
-            }
-        }
-        
-
-
-        Spacer(modifier = Modifier.weight(1f))  // This will push the remaining content to the center
-
-        if (viewState.canTransact)
-            AccountInfo(
-                walletName = viewState.userLabel,
-                address = viewState.userAddress,
-                balance = viewState.solBalance
-            )
-
-        Row() {
-            if (viewState.canTransact)
                 Button(
                     onClick = {
-                        viewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "onClick!"
+                            )
+                        }
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                        .fillMaxWidth()
-
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Request Airdrop")
+                    Text(text = "Sign a message")
                 }
-            Button(
-                onClick = {
-                    if (intentSender != null && !viewState.canTransact)
-                        viewModel.connect(intentSender)
-                    else
-                        viewModel.disconnect()
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 4.dp)
-                    .fillMaxWidth()
-            ) {
-                Text(if (viewState.canTransact) "Disconnect" else "Connect")
             }
+
+            Section(
+                sectionTitle = "Transactions:",
+            ) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Sign a Transaction")
+                }
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Send a Transaction")
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (viewState.canTransact)
+                AccountInfo(
+                    walletName = viewState.userLabel,
+                    address = viewState.userAddress,
+                    balance = viewState.solBalance
+                )
         }
     }
 }
+
 
 @Composable
 fun Section(sectionTitle: String, content: @Composable () -> Unit) {

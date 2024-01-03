@@ -26,7 +26,8 @@ data class MainViewState(
     val solBalance: Double = 0.0,
     val userAddress: String = "",
     val userLabel: String = "",
-    val walletFound: Boolean = true
+    val walletFound: Boolean = true,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -36,6 +37,7 @@ class MainViewModel @Inject constructor(
 ): ViewModel() {
 
     private val rpcUri = "https://api.testnet.solana.com".toUri()
+
     private fun MainViewState.updateViewState() {
         _state.update { this }
     }
@@ -59,7 +61,8 @@ class MainViewModel @Inject constructor(
             getBalance(persistedConn.publicKey)
 
             _state.value.copy(
-                isLoading = false
+                isLoading = false,
+                snackbarMessage = "Successfully connected to: " + persistedConn.publicKey.base58()
             ).updateViewState()
 
             walletAdapter.authToken = persistedConn.authToken

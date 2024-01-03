@@ -35,11 +35,13 @@ import com.example.solanakotlincomposescaffold.viewmodel.MainViewModel
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import com.funkatronics.publickey.SolanaPublicKey
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -79,12 +81,12 @@ fun MainScreen(
         topBar = {
             Text(
                 text = "Solana Compose dApp Scaffold",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .padding(all = 24.dp)
             )
-         },
+        },
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
         contentWindowInsets = WindowInsets(12, 12, 12, 12),
@@ -97,10 +99,10 @@ fun MainScreen(
 
         LaunchedEffect(viewState.snackbarMessage) {
             viewState.snackbarMessage?.let { message ->
-                snackbarHostState.showSnackbar(message)
+                snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+                viewModel.clearSnackBar()
             }
         }
-
 
         Column(
             modifier = Modifier
@@ -149,6 +151,36 @@ fun MainScreen(
                     address = viewState.userAddress,
                     balance = viewState.solBalance
                 )
+
+            Row() {
+                if (viewState.canTransact)
+                    Button(
+                        onClick = {
+                            viewModel.requestAirdrop(SolanaPublicKey.from(viewState.userAddress))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 4.dp)
+                            .fillMaxWidth()
+
+                    ) {
+                        Text("Request Airdrop")
+                    }
+                Button(
+                    onClick = {
+                        if (intentSender != null && !viewState.canTransact)
+                            viewModel.connect(intentSender)
+                        else
+                            viewModel.disconnect()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(if (viewState.canTransact) "Disconnect" else "Connect")
+                }
+            }
         }
     }
 }

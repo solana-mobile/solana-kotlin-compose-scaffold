@@ -62,7 +62,7 @@ class MainViewModel @Inject constructor(
 
             _state.value.copy(
                 isLoading = false,
-                snackbarMessage = "Successfully connected to: " + persistedConn.publicKey.base58()
+                snackbarMessage = "✅ | Successfully auto-connected to: \n" + persistedConn.publicKey.base58() + "."
             ).updateViewState()
 
             walletAdapter.authToken = persistedConn.authToken
@@ -95,13 +95,15 @@ class MainViewModel @Inject constructor(
 
                     _state.value.copy(
                         isLoading = false,
-                        canTransact = true
+                        canTransact = true,
+                        snackbarMessage = "✅ | Successfully connected to: \n" + currentConn.publicKey.base58() + "."
                     ).updateViewState()
                 }
 
                 is TransactionResult.NoWalletFound -> {
                     _state.value.copy(
-                        walletFound = false
+                        walletFound = false,
+                        snackbarMessage = "❌ | No wallet found."
                     ).updateViewState()
 
                 }
@@ -112,6 +114,7 @@ class MainViewModel @Inject constructor(
                         canTransact = false,
                         userAddress = "",
                         userLabel = "",
+                        snackbarMessage = "✅ | Failed connecting to wallet."
                     ).updateViewState()
                 }
             }
@@ -128,7 +131,9 @@ class MainViewModel @Inject constructor(
                     solBalance = result/1000000000.0
                 ).updateViewState()
             } catch (e: AccountBalanceUseCase.InvalidAccountException) {
-                // TODO: communicate error to UI
+                _state.value.copy(
+                    snackbarMessage = "❌ | Failed fetching account balance."
+                ).updateViewState()
             }
         }
     }
@@ -142,9 +147,13 @@ class MainViewModel @Inject constructor(
 
                 getBalance(account)
             } catch (e: RequestAirdropUseCase.AirdropFailedException) {
-                // TODO: communicate error to UI
+                _state.value.copy(
+                    snackbarMessage = "❌ | Airdrop request failed: " + e.message
+                ).updateViewState()
             } catch (e: ConfirmTransactionUseCase.SignatureStatusException) {
-                // TODO: communicate error to UI
+                _state.value.copy(
+                    snackbarMessage = "❌ | Signature status exception: " + e.message
+                ).updateViewState()
             }
         }
     }
@@ -155,8 +164,16 @@ class MainViewModel @Inject constructor(
             if (conn is Connected) {
                 persistenceUseCase.clearConnection()
 
-                MainViewState().updateViewState()
+                MainViewState().copy(
+                    snackbarMessage = "✅ | Disconnected from wallet."
+                ).updateViewState()
             }
         }
+    }
+
+    fun clearSnackBar() {
+        _state.value.copy(
+            snackbarMessage = null
+        ).updateViewState()
     }
 }

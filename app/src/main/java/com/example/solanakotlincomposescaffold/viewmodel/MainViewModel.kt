@@ -1,5 +1,6 @@
 package com.example.solanakotlincomposescaffold.viewmodel
 
+import android.app.Activity
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,10 +9,13 @@ import com.example.solanakotlincomposescaffold.usecase.ConfirmTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.Connected
 import com.example.solanakotlincomposescaffold.usecase.PersistenceUseCase
 import com.example.solanakotlincomposescaffold.usecase.RequestAirdropUseCase
+import com.funkatronics.encoders.Base58
 import com.funkatronics.publickey.SolanaPublicKey
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
+import com.solana.mobilewalletadapter.clientlib.protocol.MobileWalletAdapterClient
+import com.solana.mobilewalletadapter.clientlib.successPayload
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -114,10 +118,35 @@ class MainViewModel @Inject constructor(
                         canTransact = false,
                         userAddress = "",
                         userLabel = "",
-                        snackbarMessage = "✅ | Failed connecting to wallet."
+                        snackbarMessage = "❌ | Failed connecting to wallet."
                     ).updateViewState()
                 }
             }
+        }
+    }
+
+    fun signMessage(sender: ActivityResultSender, message: String) {
+        viewModelScope.launch {
+            val result = walletAdapter.transact(sender) {
+                signMessagesDetached(arrayOf(message.toByteArray()), arrayOf((it.accounts.first().publicKey)))
+            }
+
+            _state.value = when (result) {
+                is TransactionResult.Success -> {
+                    val signatureBytes = result.successPayload?.messages?.first()?.signatures?.first()
+                    _state.value.copy(
+                        snackbarMessage = signatureBytes?.let {
+                            "✅ | Message signed: ${Base58.encodeToString(it)}"
+                        } ?: "❌ | No signature returned"
+                    )
+                }
+                is TransactionResult.NoWalletFound -> {
+                    _state.value.copy(snackbarMessage = "❌ | No wallet found")
+                }
+                is TransactionResult.Failure -> {
+                    _state.value.copy(snackbarMessage = "❌ | Message signing failed: ${result.e.message}")
+                }
+            }.also { it.updateViewState() }
         }
     }
 

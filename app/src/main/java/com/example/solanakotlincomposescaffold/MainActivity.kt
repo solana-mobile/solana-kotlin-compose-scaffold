@@ -114,11 +114,10 @@ fun MainScreen(
             ) {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "onClick!"
-                            )
-                        }
+                        if (intentSender != null && viewState.canTransact)
+                            viewModel.signMessage(intentSender, "Hello Solana!")
+                        else
+                            viewModel.disconnect()
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

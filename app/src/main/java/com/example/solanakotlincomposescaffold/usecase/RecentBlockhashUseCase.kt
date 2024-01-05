@@ -15,7 +15,7 @@ import kotlinx.serialization.json.put
 import java.util.UUID
 
 
-object RecentBlockhashUseCase {
+object  RecentBlockhashUseCase {
     private val TAG = RequestAirdropUseCase::class.simpleName
 
     suspend operator fun invoke(rpcUri: Uri, commitment: String = "confirmed"): Blockhash =
@@ -37,7 +37,7 @@ object RecentBlockhashUseCase {
 
     private fun createBlockhashRequest(commitment: String = "confirmed", requestId: String = "1") =
         JsonRpc20Request(
-            method = "getRecentBlockhash",
+            method = "getLatestBlockhash",
             params = buildJsonArray {
                 addJsonObject {
                     put("commitment", commitment)

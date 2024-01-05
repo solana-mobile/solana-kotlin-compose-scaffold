@@ -129,16 +129,26 @@ fun MainScreen(
                 sectionTitle = "Transactions:",
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (intentSender != null && viewState.canTransact)
+                            viewModel.signTransaction(intentSender)
+                        else
+                            viewModel.disconnect()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Sign a Transaction")
                 }
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (intentSender != null && viewState.canTransact)
+                            viewModel.publishMemo(intentSender, "Hello Solana!")
+                        else
+                            viewModel.disconnect()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "Send a Transaction")
+                    Text(text = "Send a Memo Transaction")
                 }
             }
 

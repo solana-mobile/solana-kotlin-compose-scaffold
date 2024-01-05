@@ -10,7 +10,11 @@ import com.example.solanakotlincomposescaffold.usecase.Connected
 import com.example.solanakotlincomposescaffold.usecase.PersistenceUseCase
 import com.example.solanakotlincomposescaffold.usecase.RequestAirdropUseCase
 import com.funkatronics.encoders.Base58
+import com.funkatronics.publickey.PublicKey
 import com.funkatronics.publickey.SolanaPublicKey
+import com.funkatronics.transaction.AccountMeta
+import com.funkatronics.transaction.Transaction
+import com.funkatronics.transaction.TransactionInstruction
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
@@ -149,6 +153,31 @@ class MainViewModel @Inject constructor(
             }.also { it.updateViewState() }
         }
     }
+
+//    fun publishMemo(sender: ActivityResultSender, memoText: String) {
+//        viewModelScope.launch {
+//
+//            val result = walletAdapter.transact(sender) { authResult ->
+//                val account = SolanaPublicKey(authResult.accounts.first().publicKey)
+//                val memoProgramId = SolanaPublicKey.from("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
+//                val memoInstruction = TransactionInstruction(
+//                    memoProgramId,
+//                    listOf(AccountMeta(account, true, true)),
+//                    memoText.encodeToByteArray()
+//                )
+//
+//
+//                val blockHash = solanaRpcUseCase.getLatestBlockHash()
+//
+//                val tx = Transaction()
+//                tx.add(MemoProgram.writeUtf8(publicKey, memoText))
+//                tx.setRecentBlockHash(blockHash!!)
+//                tx.feePayer = publicKey
+//
+//                signAndSendTransactions(arrayOf(message.toByteArray()), arrayOf((it.accounts.first().publicKey)))
+//            }
+//        }
+//    }
 
     fun getBalance(account: SolanaPublicKey) {
         viewModelScope.launch(Dispatchers.IO) {

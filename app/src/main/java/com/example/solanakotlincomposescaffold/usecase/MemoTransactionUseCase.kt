@@ -1,20 +1,19 @@
 package com.example.solanakotlincomposescaffold.usecase
 
 import android.net.Uri
-import com.funkatronics.publickey.SolanaPublicKey
-import com.funkatronics.transaction.AccountMeta
-import com.funkatronics.transaction.Message
-import com.funkatronics.transaction.TransactionInstruction
+import com.solana.publickey.SolanaPublicKey
+import com.solana.transaction.AccountMeta
+import com.solana.transaction.Message
+import com.solana.transaction.Transaction
+import com.solana.transaction.TransactionInstruction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-import com.funkatronics.publickey.SolanaPublicKey as PublicKey
 
 object MemoTransactionUseCase {
     private val TAG = AccountBalanceUseCase::class.simpleName
     private val memoProgramId = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
 
-    suspend operator fun invoke(rpcUri: Uri, address: PublicKey, message: String): Message =
+    suspend operator fun invoke(rpcUri: Uri, address: SolanaPublicKey, message: String): Transaction =
         withContext(Dispatchers.IO) {
             // Solana Memo Program
             val memoProgramId = SolanaPublicKey.from(memoProgramId)
@@ -26,9 +25,10 @@ object MemoTransactionUseCase {
 
             // Build Message
             val blockhash = RecentBlockhashUseCase(rpcUri)
-            Message.Builder()
+            val memoTxMessage = Message.Builder()
                 .addInstruction(memoInstruction)
                 .setRecentBlockhash(blockhash)
                 .build()
+            return@withContext Transaction(listOf(ByteArray(64)), memoTxMessage)
         }
 }

@@ -1,16 +1,15 @@
 package com.example.solanakotlincomposescaffold.usecase
 
 import android.content.SharedPreferences
+import com.solana.publickey.SolanaPublicKey
 import javax.inject.Inject
-
-import com.funkatronics.publickey.SolanaPublicKey as PublicKey
 
 sealed class WalletConnection
 
 object NotConnected : WalletConnection()
 
 data class Connected(
-    val publicKey: PublicKey,
+    val publicKey: SolanaPublicKey,
     val accountLabel: String,
     val authToken: String
 ): WalletConnection()
@@ -32,7 +31,7 @@ class PersistenceUseCase @Inject constructor(
                 val newConn = if (key.isNullOrEmpty() || token.isNullOrEmpty()) {
                     NotConnected
                 } else {
-                    Connected(PublicKey.from(key), accountLabel, token)
+                    Connected(SolanaPublicKey.from(key), accountLabel, token)
                 }
 
                 return newConn
@@ -40,7 +39,7 @@ class PersistenceUseCase @Inject constructor(
         }
     }
 
-    fun persistConnection(pubKey: PublicKey, accountLabel: String, token: String) {
+    fun persistConnection(pubKey: SolanaPublicKey, accountLabel: String, token: String) {
         sharedPreferences.edit().apply {
             putString(PUBKEY_KEY, pubKey.base58())
             putString(ACCOUNT_LABEL, accountLabel)

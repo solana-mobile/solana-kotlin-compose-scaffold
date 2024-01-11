@@ -68,11 +68,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0-RC")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-android:2.3.4")
-    implementation("io.github.funkatronics:multimult:0.2.0")
-    implementation("io.github.funkatronics:rpccore:0.2.1")
-    implementation("io.github.funkatronics:web3kt-solana:0.1.1")
 
+    implementation("com.solanamobile:web3-solana:0.2.1")
+    implementation("com.solanamobile:rpc-core:0.2.2")
     implementation("com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.0.0")
+    implementation("foundation.metaplex:base58:0.2.10")
 
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-compiler:2.48")

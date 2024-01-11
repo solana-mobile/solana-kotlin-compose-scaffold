@@ -5,7 +5,7 @@ import android.util.Log
 import com.example.solanakotlincomposescaffold.networking.KtorHttpDriver
 import com.funkatronics.networking.Rpc20Driver
 import com.funkatronics.rpccore.JsonRpc20Request
-import com.funkatronics.transaction.Blockhash
+import com.solana.transaction.Blockhash
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -15,7 +15,7 @@ import kotlinx.serialization.json.put
 import java.util.UUID
 
 
-object  RecentBlockhashUseCase {
+object RecentBlockhashUseCase {
     private val TAG = RequestAirdropUseCase::class.simpleName
 
     suspend operator fun invoke(rpcUri: Uri, commitment: String = "confirmed"): Blockhash =

@@ -1,6 +1,5 @@
 package com.example.solanakotlincomposescaffold.viewmodel
 
-import android.app.Activity
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,20 +8,14 @@ import com.example.solanakotlincomposescaffold.usecase.ConfirmTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.Connected
 import com.example.solanakotlincomposescaffold.usecase.MemoTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.PersistenceUseCase
-import com.example.solanakotlincomposescaffold.usecase.RecentBlockhashUseCase
 import com.example.solanakotlincomposescaffold.usecase.RequestAirdropUseCase
-import com.funkatronics.encoders.Base58
-import com.funkatronics.publickey.PublicKey
-import com.funkatronics.publickey.SolanaPublicKey
-import com.funkatronics.transaction.AccountMeta
-import com.funkatronics.transaction.Transaction
-import com.funkatronics.transaction.TransactionInstruction
+import com.solana.publickey.SolanaPublicKey
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
-import com.solana.mobilewalletadapter.clientlib.protocol.MobileWalletAdapterClient
 import com.solana.mobilewalletadapter.clientlib.successPayload
 import dagger.hilt.android.lifecycle.HiltViewModel
+import foundation.metaplex.base58.encodeToBase58String
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,7 +135,7 @@ class MainViewModel @Inject constructor(
                     val signatureBytes = result.successPayload?.messages?.first()?.signatures?.first()
                     _state.value.copy(
                         snackbarMessage = signatureBytes?.let {
-                            "✅ | Message signed: ${Base58.encodeToString(it)}"
+                            "✅ | Message signed: ${it.encodeToBase58String()}"
                         } ?: "❌ | Incorrect payload returned"
                     )
                 }
@@ -161,18 +154,18 @@ class MainViewModel @Inject constructor(
             val result = walletAdapter.transact(sender) { authResult ->
                 val account = SolanaPublicKey(authResult.accounts.first().publicKey)
                 val memoTx = MemoTransactionUseCase(rpcUri, account, "Hello Solana!");
-                signTransactions(arrayOf(memoTx.serialize()))
+                signTransactions(arrayOf(memoTx.serialize()));
             }
 
             _state.value = when (result) {
                 is TransactionResult.Success -> {
                     val signatureBytes = result.successPayload?.signedPayloads?.first()
                     signatureBytes?.let {
-                        println("Memo publish signature: " + Base58.encodeToString(signatureBytes))
+                        println("Memo publish signature: " + signatureBytes.encodeToBase58String())
                     }
                     _state.value.copy(
                         snackbarMessage = signatureBytes?.let {
-                            "✅ | Transaction submitted: ${Base58.encodeToString(it)}"
+                            "✅ | Transaction submitted: ${it.encodeToBase58String()}"
                         } ?: "❌ | Incorrect payload returned"
                     )
                 }
@@ -191,18 +184,19 @@ class MainViewModel @Inject constructor(
             val result = walletAdapter.transact(sender) { authResult ->
                 val account = SolanaPublicKey(authResult.accounts.first().publicKey)
                 val memoTx = MemoTransactionUseCase(rpcUri, account, memoText);
-                signAndSendTransactions(arrayOf(memoTx.serialize()))
+                signAndSendTransactions(arrayOf(memoTx.serialize()));
             }
+//            val result = signAndSendTransactions
 
             _state.value = when (result) {
                 is TransactionResult.Success -> {
                     val signatureBytes = result.successPayload?.signatures?.first()
                     signatureBytes?.let {
-                        println("Memo publish signature: " + Base58.encodeToString(signatureBytes))
+                        println("Memo publish signature: " + signatureBytes.encodeToBase58String())
                     }
                     _state.value.copy(
                         snackbarMessage = signatureBytes?.let {
-                            "✅ | Transaction submitted: ${Base58.encodeToString(it)}"
+                            "✅ | Transaction submitted: ${it.encodeToBase58String()}"
                         } ?: "❌ | Incorrect payload returned"
                     )
                 }
@@ -225,7 +219,7 @@ class MainViewModel @Inject constructor(
                 _state.value.copy(
                     solBalance = result/1000000000.0
                 ).updateViewState()
-            } catch (e: AccountBalanceUseCase.InvalidAccountException) {
+            } catch (e: Exception) {
                 _state.value.copy(
                     snackbarMessage = "❌ | Failed fetching account balance."
                 ).updateViewState()

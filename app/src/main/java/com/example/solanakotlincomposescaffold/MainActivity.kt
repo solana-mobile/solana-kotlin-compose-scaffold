@@ -1,5 +1,8 @@
 package com.example.solanakotlincomposescaffold
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,7 +42,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import com.solana.publickey.SolanaPublicKey
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -135,7 +144,7 @@ fun MainScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "Sign a Transaction")
+                    Text(text = "Sign a Transaction (deprecated)")
                 }
                 Button(
                     onClick = {
@@ -147,6 +156,11 @@ fun MainScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Send a Memo Transaction")
+                }
+
+                val memoTxSignature = viewState.memoTxSignature
+                if (memoTxSignature != null) {
+                    ExplorerHyperlink(memoTxSignature)
                 }
             }
 
@@ -243,3 +257,32 @@ fun AccountInfo(walletName: String, address: String, balance: Number) {
         }
     }
 }
+
+@Composable
+fun ExplorerHyperlink(txSignature: String) {
+    val context = LocalContext.current
+    val url = "https://explorer.solana.com/tx/${txSignature}?cluster=devnet"
+    val annotatedText = AnnotatedString.Builder("View your memo on the ").apply {
+        pushStyle(
+            SpanStyle(
+                color = Color.Blue,
+                textDecoration = TextDecoration.Underline,
+                fontSize = 16.sp
+            )
+        )
+        append("explorer.")
+    }
+
+    ClickableText(
+        text = annotatedText.toAnnotatedString(),
+        onClick = {
+            openUrl(context, url)
+        }
+    )
+}
+
+fun openUrl(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    context.startActivity(intent)
+}
+

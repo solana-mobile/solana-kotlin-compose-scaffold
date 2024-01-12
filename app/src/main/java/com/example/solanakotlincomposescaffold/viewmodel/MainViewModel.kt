@@ -30,6 +30,7 @@ data class MainViewState(
     val userAddress: String = "",
     val userLabel: String = "",
     val walletFound: Boolean = true,
+    val memoTxSignature: String? = null,
     val snackbarMessage: String? = null
 )
 
@@ -117,7 +118,7 @@ class MainViewModel @Inject constructor(
                         canTransact = false,
                         userAddress = "",
                         userLabel = "",
-                        snackbarMessage = "❌ | Failed connecting to wallet."
+                        snackbarMessage = "❌ | Failed connecting to wallet: " + result.e.message
                     ).updateViewState()
                 }
             }
@@ -159,14 +160,14 @@ class MainViewModel @Inject constructor(
 
             _state.value = when (result) {
                 is TransactionResult.Success -> {
-                    val signatureBytes = result.successPayload?.signedPayloads?.first()
-                    signatureBytes?.let {
-                        println("Memo publish signature: " + signatureBytes.encodeToBase58String())
+                    val signedTxBytes = result.successPayload?.signedPayloads?.first()
+                    signedTxBytes?.let {
+                        println("Memo publish signature: " + signedTxBytes.encodeToBase58String())
                     }
                     _state.value.copy(
-                        snackbarMessage = signatureBytes?.let {
-                            "✅ | Transaction submitted: ${it.encodeToBase58String()}"
-                        } ?: "❌ | Incorrect payload returned"
+                        snackbarMessage = (signedTxBytes?.let {
+                            "✅ | Transaction signed: ${it.encodeToBase58String()}"
+                        } ?: "❌ | Incorrect payload returned"),
                     )
                 }
                 is TransactionResult.NoWalletFound -> {
@@ -186,18 +187,18 @@ class MainViewModel @Inject constructor(
                 val memoTx = MemoTransactionUseCase(rpcUri, account, memoText);
                 signAndSendTransactions(arrayOf(memoTx.serialize()));
             }
-//            val result = signAndSendTransactions
 
             _state.value = when (result) {
                 is TransactionResult.Success -> {
                     val signatureBytes = result.successPayload?.signatures?.first()
                     signatureBytes?.let {
                         println("Memo publish signature: " + signatureBytes.encodeToBase58String())
-                    }
-                    _state.value.copy(
-                        snackbarMessage = signatureBytes?.let {
-                            "✅ | Transaction submitted: ${it.encodeToBase58String()}"
-                        } ?: "❌ | Incorrect payload returned"
+                        _state.value.copy(
+                            snackbarMessage = "✅ | Transaction submitted: ${it.encodeToBase58String()}",
+                            memoTxSignature = it.encodeToBase58String()
+                        )
+                    } ?: _state.value.copy(
+                        snackbarMessage = "❌ | Incorrect payload returned"
                     )
                 }
                 is TransactionResult.NoWalletFound -> {

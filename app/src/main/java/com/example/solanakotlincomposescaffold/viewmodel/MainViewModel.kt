@@ -155,7 +155,9 @@ class MainViewModel @Inject constructor(
             val result = walletAdapter.transact(sender) { authResult ->
                 val account = SolanaPublicKey(authResult.accounts.first().publicKey)
                 val memoTx = MemoTransactionUseCase(rpcUri, account, "Hello Solana!");
-                signTransactions(arrayOf(memoTx.serialize()));
+                signTransactions(arrayOf(
+                    memoTx.serialize(),
+                ));
             }
 
             _state.value = when (result) {
@@ -228,12 +230,16 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun requestAirdrop(account: SolanaPublicKey) {
+    fun requestAirdrop(account : SolanaPublicKey) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val signature = RequestAirdropUseCase(rpcUri, account, 10000)
 
-                ConfirmTransactionUseCase(rpcUri, signature)
+                if (ConfirmTransactionUseCase(rpcUri, signature)) {
+                    _state.value.copy(
+                        snackbarMessage = "✅ | Airdrop request succeeded!"
+                    ).updateViewState()
+                }
 
                 getBalance(account)
             } catch (e: RequestAirdropUseCase.AirdropFailedException) {

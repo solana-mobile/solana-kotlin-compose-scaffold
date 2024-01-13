@@ -3,8 +3,8 @@ package com.example.solanakotlincomposescaffold.usecase
 import android.net.Uri
 import android.util.Log
 import com.example.solanakotlincomposescaffold.networking.KtorHttpDriver
-import com.funkatronics.networking.Rpc20Driver
-import com.funkatronics.rpccore.JsonRpc20Request
+import com.solana.networking.Rpc20Driver
+import com.solana.rpccore.JsonRpc20Request
 import foundation.metaplex.base58.encodeToBase58String
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

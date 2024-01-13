@@ -1,7 +1,7 @@
 package com.example.solanakotlincomposescaffold.networking
 
-import com.funkatronics.networking.HttpNetworkDriver
-import com.funkatronics.networking.HttpRequest
+import com.solana.networking.HttpNetworkDriver
+import com.solana.networking.HttpRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.request.header

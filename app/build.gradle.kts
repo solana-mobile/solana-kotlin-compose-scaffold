@@ -69,8 +69,8 @@ dependencies {
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-android:2.3.4")
 
-    implementation("com.solanamobile:web3-solana:0.2.1")
-    implementation("com.solanamobile:rpc-core:0.2.2")
+    implementation("com.solanamobile:web3-solana:0.2.2")
+    implementation("com.solanamobile:rpc-core:0.2.3")
     implementation("com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.0.0")
     implementation("foundation.metaplex:base58:0.2.10")
 

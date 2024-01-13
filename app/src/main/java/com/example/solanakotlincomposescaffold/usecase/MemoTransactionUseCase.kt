@@ -29,6 +29,6 @@ object MemoTransactionUseCase {
                 .addInstruction(memoInstruction)
                 .setRecentBlockhash(blockhash)
                 .build()
-            return@withContext Transaction(listOf(ByteArray(64)), memoTxMessage)
+            return@withContext Transaction(memoTxMessage)
         }
 }

@@ -9,6 +9,7 @@ plugins {
 android {
     namespace = "com.example.solanakotlincomposescaffold"
     compileSdk = 33
+    android.buildFeatures.buildConfig = true
 
     defaultConfig {
         applicationId = "com.example.solanakotlincomposescaffold"
@@ -16,7 +17,7 @@ android {
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
-
+        buildConfigField("String", "RPC_URI", "\"https://api.devnet.solana.com\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

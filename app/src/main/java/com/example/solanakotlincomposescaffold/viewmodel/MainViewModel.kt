@@ -3,6 +3,7 @@ package com.example.solanakotlincomposescaffold.viewmodel
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.solanakotlincomposescaffold.BuildConfig
 import com.example.solanakotlincomposescaffold.usecase.AccountBalanceUseCase
 import com.example.solanakotlincomposescaffold.usecase.ConfirmTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.Connected
@@ -40,7 +41,7 @@ class MainViewModel @Inject constructor(
     private val persistenceUseCase: PersistenceUseCase
 ): ViewModel() {
 
-    private val rpcUri = "https://api.devnet.solana.com".toUri()
+    private val rpcUri = BuildConfig.RPC_URI.toUri()
 
     private fun MainViewState.updateViewState() {
         _state.update { this }

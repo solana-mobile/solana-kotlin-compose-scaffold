@@ -49,7 +49,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
-import foundation.metaplex.base58.decodeBase58
+import com.funkatronics.encoders.Base58
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -178,7 +178,7 @@ fun MainScreen(
                 if (viewState.canTransact)
                     Button(
                         onClick = {
-                            viewModel.requestAirdrop(SolanaPublicKey(viewState.userAddress.decodeBase58()))
+                            viewModel.requestAirdrop(SolanaPublicKey(Base58.decode(viewState.userAddress)))
                         },
                         modifier = Modifier
                             .weight(1f)

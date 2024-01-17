@@ -67,6 +67,7 @@ class MainViewModel @Inject constructor(
 
             _state.value.copy(
                 isLoading = false,
+                // TODO: Move all Snackbar message strings into resources
                 snackbarMessage = "✅ | Successfully auto-connected to: \n" + persistedConn.publicKey.base58() + "."
             ).updateViewState()
 

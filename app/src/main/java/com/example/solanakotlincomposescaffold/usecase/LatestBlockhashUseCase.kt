@@ -3,9 +3,9 @@ package com.example.solanakotlincomposescaffold.usecase
 import android.net.Uri
 import android.util.Log
 import com.example.solanakotlincomposescaffold.networking.KtorHttpDriver
-import com.funkatronics.networking.Rpc20Driver
-import com.funkatronics.rpccore.JsonRpc20Request
-import com.funkatronics.transaction.Blockhash
+import com.solana.networking.Rpc20Driver
+import com.solana.rpccore.JsonRpc20Request
+import com.solana.transaction.Blockhash
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -37,7 +37,7 @@ object RecentBlockhashUseCase {
 
     private fun createBlockhashRequest(commitment: String = "confirmed", requestId: String = "1") =
         JsonRpc20Request(
-            method = "getRecentBlockhash",
+            method = "getLatestBlockhash",
             params = buildJsonArray {
                 addJsonObject {
                     put("commitment", commitment)

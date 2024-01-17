@@ -3,16 +3,20 @@ package com.example.solanakotlincomposescaffold.viewmodel
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.solanakotlincomposescaffold.BuildConfig
 import com.example.solanakotlincomposescaffold.usecase.AccountBalanceUseCase
 import com.example.solanakotlincomposescaffold.usecase.ConfirmTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.Connected
+import com.example.solanakotlincomposescaffold.usecase.MemoTransactionUseCase
 import com.example.solanakotlincomposescaffold.usecase.PersistenceUseCase
 import com.example.solanakotlincomposescaffold.usecase.RequestAirdropUseCase
-import com.funkatronics.publickey.SolanaPublicKey
+import com.solana.publickey.SolanaPublicKey
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
+import com.solana.mobilewalletadapter.clientlib.successPayload
 import dagger.hilt.android.lifecycle.HiltViewModel
+import foundation.metaplex.base58.encodeToBase58String
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +30,9 @@ data class MainViewState(
     val solBalance: Double = 0.0,
     val userAddress: String = "",
     val userLabel: String = "",
-    val walletFound: Boolean = true
+    val walletFound: Boolean = true,
+    val memoTxSignature: String? = null,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -35,7 +41,8 @@ class MainViewModel @Inject constructor(
     private val persistenceUseCase: PersistenceUseCase
 ): ViewModel() {
 
-    private val rpcUri = "https://api.testnet.solana.com".toUri()
+    private val rpcUri = BuildConfig.RPC_URI.toUri()
+
     private fun MainViewState.updateViewState() {
         _state.update { this }
     }
@@ -59,7 +66,9 @@ class MainViewModel @Inject constructor(
             getBalance(persistedConn.publicKey)
 
             _state.value.copy(
-                isLoading = false
+                isLoading = false,
+                // TODO: Move all Snackbar message strings into resources
+                snackbarMessage = "✅ | Successfully auto-connected to: \n" + persistedConn.publicKey.base58() + "."
             ).updateViewState()
 
             walletAdapter.authToken = persistedConn.authToken
@@ -92,13 +101,15 @@ class MainViewModel @Inject constructor(
 
                     _state.value.copy(
                         isLoading = false,
-                        canTransact = true
+                        canTransact = true,
+                        snackbarMessage = "✅ | Successfully connected to: \n" + currentConn.publicKey.base58() + "."
                     ).updateViewState()
                 }
 
                 is TransactionResult.NoWalletFound -> {
                     _state.value.copy(
-                        walletFound = false
+                        walletFound = false,
+                        snackbarMessage = "❌ | No wallet found."
                     ).updateViewState()
 
                 }
@@ -109,9 +120,98 @@ class MainViewModel @Inject constructor(
                         canTransact = false,
                         userAddress = "",
                         userLabel = "",
+                        snackbarMessage = "❌ | Failed connecting to wallet: " + result.e.message
                     ).updateViewState()
                 }
             }
+        }
+    }
+
+    fun signMessage(sender: ActivityResultSender, message: String) {
+        viewModelScope.launch {
+            val result = walletAdapter.transact(sender) {
+                signMessagesDetached(arrayOf(message.toByteArray()), arrayOf((it.accounts.first().publicKey)))
+            }
+
+            _state.value = when (result) {
+                is TransactionResult.Success -> {
+                    val signatureBytes = result.successPayload?.messages?.first()?.signatures?.first()
+                    _state.value.copy(
+                        snackbarMessage = signatureBytes?.let {
+                            "✅ | Message signed: ${it.encodeToBase58String()}"
+                        } ?: "❌ | Incorrect payload returned"
+                    )
+                }
+                is TransactionResult.NoWalletFound -> {
+                    _state.value.copy(snackbarMessage = "❌ | No wallet found")
+                }
+                is TransactionResult.Failure -> {
+                    _state.value.copy(snackbarMessage = "❌ | Message signing failed: ${result.e.message}")
+                }
+            }.also { it.updateViewState() }
+        }
+    }
+
+    fun signTransaction(sender: ActivityResultSender ) {
+        viewModelScope.launch {
+            val result = walletAdapter.transact(sender) { authResult ->
+                val account = SolanaPublicKey(authResult.accounts.first().publicKey)
+                val memoTx = MemoTransactionUseCase(rpcUri, account, "Hello Solana!");
+                signTransactions(arrayOf(
+                    memoTx.serialize(),
+                ));
+            }
+
+            _state.value = when (result) {
+                is TransactionResult.Success -> {
+                    val signedTxBytes = result.successPayload?.signedPayloads?.first()
+                    signedTxBytes?.let {
+                        println("Memo publish signature: " + signedTxBytes.encodeToBase58String())
+                    }
+                    _state.value.copy(
+                        snackbarMessage = (signedTxBytes?.let {
+                            "✅ | Transaction signed: ${it.encodeToBase58String()}"
+                        } ?: "❌ | Incorrect payload returned"),
+                    )
+                }
+                is TransactionResult.NoWalletFound -> {
+                    _state.value.copy(snackbarMessage = "❌ | No wallet found")
+                }
+                is TransactionResult.Failure -> {
+                    _state.value.copy(snackbarMessage = "❌ | Transaction failed to submit: ${result.e.message}")
+                }
+            }.also { it.updateViewState() }
+        }
+    }
+
+    fun publishMemo(sender: ActivityResultSender, memoText: String) {
+        viewModelScope.launch {
+            val result = walletAdapter.transact(sender) { authResult ->
+                val account = SolanaPublicKey(authResult.accounts.first().publicKey)
+                val memoTx = MemoTransactionUseCase(rpcUri, account, memoText);
+                signAndSendTransactions(arrayOf(memoTx.serialize()));
+            }
+
+            _state.value = when (result) {
+                is TransactionResult.Success -> {
+                    val signatureBytes = result.successPayload?.signatures?.first()
+                    signatureBytes?.let {
+                        println("Memo publish signature: " + signatureBytes.encodeToBase58String())
+                        _state.value.copy(
+                            snackbarMessage = "✅ | Transaction submitted: ${it.encodeToBase58String()}",
+                            memoTxSignature = it.encodeToBase58String()
+                        )
+                    } ?: _state.value.copy(
+                        snackbarMessage = "❌ | Incorrect payload returned"
+                    )
+                }
+                is TransactionResult.NoWalletFound -> {
+                    _state.value.copy(snackbarMessage = "❌ | No wallet found")
+                }
+                is TransactionResult.Failure -> {
+                    _state.value.copy(snackbarMessage = "❌ | Transaction failed to submit: ${result.e.message}")
+                }
+            }.also { it.updateViewState() }
         }
     }
 
@@ -124,24 +224,34 @@ class MainViewModel @Inject constructor(
                 _state.value.copy(
                     solBalance = result/1000000000.0
                 ).updateViewState()
-            } catch (e: AccountBalanceUseCase.InvalidAccountException) {
-                // TODO: communicate error to UI
+            } catch (e: Exception) {
+                _state.value.copy(
+                    snackbarMessage = "❌ | Failed fetching account balance."
+                ).updateViewState()
             }
         }
     }
 
-    fun requestAirdrop(account: SolanaPublicKey) {
+    fun requestAirdrop(account : SolanaPublicKey) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val signature = RequestAirdropUseCase(rpcUri, account, 10000)
 
-                ConfirmTransactionUseCase(rpcUri, signature)
+                if (ConfirmTransactionUseCase(rpcUri, signature)) {
+                    _state.value.copy(
+                        snackbarMessage = "✅ | Airdrop request succeeded!"
+                    ).updateViewState()
+                }
 
                 getBalance(account)
             } catch (e: RequestAirdropUseCase.AirdropFailedException) {
-                // TODO: communicate error to UI
+                _state.value.copy(
+                    snackbarMessage = "❌ | Airdrop request failed: " + e.message
+                ).updateViewState()
             } catch (e: ConfirmTransactionUseCase.SignatureStatusException) {
-                // TODO: communicate error to UI
+                _state.value.copy(
+                    snackbarMessage = "❌ | Signature status exception: " + e.message
+                ).updateViewState()
             }
         }
     }
@@ -152,8 +262,16 @@ class MainViewModel @Inject constructor(
             if (conn is Connected) {
                 persistenceUseCase.clearConnection()
 
-                MainViewState().updateViewState()
+                MainViewState().copy(
+                    snackbarMessage = "✅ | Disconnected from wallet."
+                ).updateViewState()
             }
         }
+    }
+
+    fun clearSnackBar() {
+        _state.value.copy(
+            snackbarMessage = null
+        ).updateViewState()
     }
 }

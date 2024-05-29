@@ -13,9 +13,14 @@ import com.example.solanakotlincomposescaffold.usecase.RequestAirdropUseCase
 import com.funkatronics.encoders.Base58
 import com.solana.publickey.SolanaPublicKey
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import com.solana.mobilewalletadapter.clientlib.AdapterOperations
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
+import com.solana.mobilewalletadapter.clientlib.protocol.MobileWalletAdapterClient
 import com.solana.mobilewalletadapter.clientlib.successPayload
+import com.solana.publickey.PublicKey
+import com.solana.signer.Signer
+import com.solana.transaction.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -152,19 +157,52 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // temporary stuff
+    val AdapterOperations.signer: Signer
+        get() = object : Signer {
+            override val ownerLength = 32
+            override val signatureLength = 64
+            override val publicKey: PublicKey
+                get() = TODO("Not yet implemented")
+
+            override suspend fun signPayload(payload: ByteArray): ByteArray {
+                return runCatching { Transaction.from(payload) }.getOrNull()?.let {
+                    val result = this@signer.signTransactions(arrayOf(payload))
+                    result.signedPayloads.first()
+                } ?: this@signer.signMessagesDetached(arrayOf(payload), arrayOf(publicKey.bytes)).messages.first().signatures.first()
+            }
+        }
+
+    suspend fun AdapterOperations.signTransactions(vararg transactions: Transaction): List<Transaction> {
+        val serializedTxns = runCatching {
+            transactions.map { it.serialize() }.toTypedArray()
+        }.getOrElse {
+            throw IllegalArgumentException("Transactions could not be serialized", it)
+        }
+        return signTransactions(serializedTxns).signedPayloads.map {
+            Transaction.from(it)
+        }
+    }
+    suspend fun AdapterOperations.signAndSendTransactions(vararg transactions: Transaction): MobileWalletAdapterClient.SignAndSendTransactionsResult =
+        signAndSendTransactions(
+            runCatching {
+                transactions.map { it.serialize() }.toTypedArray()
+            }.getOrElse {
+                throw IllegalArgumentException("Transactions could not be serialized", it)
+            }
+        )
+
     fun signTransaction(sender: ActivityResultSender ) {
         viewModelScope.launch {
             val result = walletAdapter.transact(sender) { authResult ->
                 val account = SolanaPublicKey(authResult.accounts.first().publicKey)
-                val memoTx = MemoTransactionUseCase(rpcUri, account, "Hello Solana!");
-                signTransactions(arrayOf(
-                    memoTx.serialize(),
-                ));
+                val memoTx = MemoTransactionUseCase(rpcUri, account, "Hello Solana!")
+                signTransactions(memoTx)
             }
 
             _state.value = when (result) {
                 is TransactionResult.Success -> {
-                    val signedTxBytes = result.successPayload?.signedPayloads?.first()
+                    val signedTxBytes = result.successPayload?.first()?.serialize()
                     signedTxBytes?.let {
                         println("Memo publish signature: " + Base58.encodeToString(signedTxBytes))
                     }
@@ -188,8 +226,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val result = walletAdapter.transact(sender) { authResult ->
                 val account = SolanaPublicKey(authResult.accounts.first().publicKey)
-                val memoTx = MemoTransactionUseCase(rpcUri, account, memoText);
-                signAndSendTransactions(arrayOf(memoTx.serialize()));
+                val memoTx = MemoTransactionUseCase(rpcUri, account, memoText)
+                signAndSendTransactions(memoTx)
             }
 
             _state.value = when (result) {
